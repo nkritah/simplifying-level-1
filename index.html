@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Level 1 — Simplifying Expressions</title>
+<style>
+  /* ===== design tokens ===== */
+  :root{
+    --bg1:#0ea5e9; /* sky-500 */
+    --bg2:#6366f1; /* indigo-500 */
+    --card:#ffffffee;
+    --ink:#0f172a; /* slate-900 */
+    --muted:#64748b; /* slate-500 */
+    --accent:#10b981; /* emerald-500 */
+    --accent-2:#8b5cf6; /* violet-500 */
+    --brand:#4f46e5; /* indigo-600 */
+    --danger:#ef4444;
+    --shadow:0 10px 30px rgba(2,8,23,.18), 0 6px 12px rgba(2,8,23,.08);
+    --radius:18px;
+    --focus:0 0 0 3px rgba(79,70,229,.25), 0 0 0 6px rgba(79,70,229,.07);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    font-size: 18px; /* bigger base */
+  }
+
+  /* ===== page ===== */
+  body{ margin:0; color:var(--ink); background:radial-gradient(1200px 800px at 10% -10%, rgba(255,255,255,.9), transparent),
+                               radial-gradient(1200px 800px at 110% 10%, rgba(255,255,255,.7), transparent),
+                               linear-gradient(135deg,var(--bg1),var(--bg2));
+        min-height:100dvh; display:flex; flex-direction:column; }
+
+  /* ===== header / levels ===== */
+  header.topbar{ position:sticky; top:0; z-index:5; display:flex; align-items:center; justify-content:space-between;
+                 gap:1rem; padding:.9rem 1.2rem; backdrop-filter:saturate(1.4) blur(8px);
+                 background:linear-gradient(to right, rgba(255,255,255,.55), rgba(255,255,255,.35));
+                 border-bottom:1px solid rgba(255,255,255,.45); box-shadow:var(--shadow); }
+  .brand h1{ margin:.1rem 0; font-size: clamp(1.4rem, 2.7vw, 2rem); font-weight:800; letter-spacing:.2px; color:#1e1b4b; }
+  .brand small{ color:var(--muted); font-weight:600; }
+  nav.levels{ display:flex; gap:.6rem; }
+  a.lvlBtn{ --bg: rgba(255,255,255,.75); --fg:#1f2937; text-decoration:none; background:var(--bg); color:var(--fg);
+            padding:.55rem 1rem; border-radius:999px; font-weight:700; border:1px solid rgba(2,6,23,.1);
+            box-shadow:0 2px 8px rgba(2,6,23,.15); transition: transform .15s ease, background .2s ease, box-shadow .2s ease; }
+  a.lvlBtn:hover{ transform:translateY(-1px); background:#fff; box-shadow:0 8px 20px rgba(2,6,23,.2); }
+  a.lvlBtn:active{ transform:translateY(0); }
+  a.lvlBtn.primary{ background:linear-gradient(135deg,#fff, #eef2ff); border-color:#e0e7ff; }
+
+  /* ===== main cards ===== */
+  .wrap{ width:min(1100px, 92%); margin:1.2rem auto 2rem; display:grid; gap:1.2rem; }
+  .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:1.4rem; }
+
+  /* ===== menu ===== */
+  #menuScreen{ display:grid; gap:1rem; }
+  #menuScreen h2{ margin:0 0 .4rem; font-size:1.6rem; }
+  .row{ display:flex; flex-wrap:wrap; gap:.8rem 1rem; align-items:center; }
+  label{ font-weight:600; }
+  input[type="text"], input[type="number"], select{ font-size:1rem; padding:.6rem .8rem; border-radius:10px; border:1px solid #e5e7eb; background:#fff; box-shadow: inset 0 1px 2px rgba(2,6,23,.04); }
+  fieldset{ border:none; padding:0; margin:0; }
+  .controls{ display:flex; gap:.7rem; align-items:center; flex-wrap:wrap; }
+
+  button, .btn{ appearance:none; border:none; background:linear-gradient(135deg,var(--accent), #34d399); color:#fff;
+                padding:.75rem 1.15rem; border-radius:12px; font-weight:800; letter-spacing:.2px; cursor:pointer;
+                box-shadow:0 10px 20px rgba(16,185,129,.24), inset 0 -1px 0 rgba(255,255,255,.2);
+                transition: transform .12s ease, box-shadow .2s ease, opacity .2s ease; }
+  button:hover{ transform: translateY(-1px); box-shadow:0 14px 30px rgba(16,185,129,.28), inset 0 -1px 0 rgba(255,255,255,.2); }
+  button:active{ transform: translateY(0); }
+
+  /* ===== game ===== */
+  #gameScreen{ display:none; gap:1.2rem; }
+  #hello{ font-size:1.2rem; font-weight:800; color:#111827; }
+  #statusBar{ font-size:1.15rem; font-weight:800; color:#334155; display:flex; gap:.8rem; align-items:center; flex-wrap:wrap; }
+  .chip{ background:#eef2ff; color:#3730a3; padding:.35rem .6rem; border-radius:999px; font-weight:800; box-shadow:inset 0 1px 0 rgba(255,255,255,.8); }
+
+  #exprBox{ font-size:2.05rem; font-weight:800; background:#fff; padding:.9rem 1.1rem; border-radius:14px;
+            box-shadow:0 8px 24px rgba(0,0,0,.08); user-select:none; line-height:2.4rem; }
+  .exprTerm{ display:inline-block; padding:.2rem .45rem; border-radius:10px; transition: box-shadow .15s ease, transform .15s ease; }
+  .exprTerm:hover{ outline:none; box-shadow:0 0 0 3px rgba(79,70,229,.35); cursor:grab; transform:translateY(-1px); }
+
+  #workspace{ display:flex; gap:1.1rem; flex-wrap:wrap; align-items:flex-start; }
+  .zone{ width:210px; min-height:140px; background:linear-gradient(180deg,#eef2ff,#e0e7ff); border:2px dashed #a5b4fc;
+         border-radius:16px; padding:.7rem; display:flex; flex-direction:column; align-items:center; gap:.45rem;
+         transition: background .12s ease, transform .12s ease, border-color .2s ease; }
+  .zone.drag{ transform:scale(1.01); background:#e3e7ff; border-color:#818cf8; }
+  .zone h2{ margin:.1rem 0 .2rem; font-size:1.2rem; color:#3730a3; }
+  .tile{ padding:.5rem .85rem; background:var(--brand); color:#fff; border-radius:12px; font-size:1.2rem; font-weight:800;
+         box-shadow:0 6px 12px rgba(79,70,229,.25); }
+  .sumOut{ font-size:1.45rem; font-weight:900; margin-top:auto; min-height:1.45rem; color:#0f766e; }
+  #resultBox{ font-size:1.6rem; font-weight:900; color:#065f46; min-height:1.8rem; }
+
+  .actions{ display:flex; gap:.6rem; }
+  .btn-secondary{ background:linear-gradient(135deg,#4f46e5,#818cf8); box-shadow:0 10px 20px rgba(79,70,229,.25), inset 0 -1px 0 rgba(255,255,255,.2); }
+  .btn-ghost{ background:#fff; color:#111827; border:1px solid #e2e8f0; box-shadow:0 4px 10px rgba(2,6,23,.08); }
+
+  /* confetti canvas */
+  canvas#confetti{ position:fixed; inset:0; width:100%; height:100%; display:none; pointer-events:none; z-index:20; }
+
+  /* accessibility */
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+</style>
+</head>
+<body>
+  <header class="topbar card">
+    <div class="brand">
+      <h1>Level 1: Simplifying Expressions</h1>
+      <small id="playerTag" aria-live="polite"></small>
+    </div>
+    <nav class="levels">
+      <!-- Replace the href values with your real pages -->
+      <a class="lvlBtn primary" href="https://nkritah.github.io/simplifying-level-2/" title="Go to Level 2">Level 2</a>
+      <a class="lvlBtn primary" href="https://nkritah.github.io/simplifying-level-3/" title="Go to Level 3">Level 3</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <!-- ===== MENU ===== -->
+    <section id="menuScreen" class="card" aria-label="Setup">
+      <h2>Setup</h2>
+
+      <div class="row">
+        <label for="userName">Name</label>
+        <input id="userName" type="text" placeholder="Your name" required />
+      </div>
+
+      <fieldset class="row">
+        <legend style="font-weight:800; margin-bottom:.2rem">Choose mode</legend>
+        <div class="controls">
+          <label><input type="radio" name="mode" value="target" checked /> Target score</label>
+          <input id="targetScore" type="number" min="1" value="10" style="width:90px" />
+
+          <label><input type="radio" name="mode" value="timed" /> Time limit</label>
+          <select id="timeSelect">
+            <option value="0">No limit</option>
+            <option value="300">5 min</option>
+            <option value="600">10 min</option>
+            <option value="900">15 min</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <div class="row">
+        <button id="startBtn" class="btn">Start Level 1</button>
+      </div>
+    </section>
+
+    <!-- ===== GAME ===== -->
+    <section id="gameScreen" class="card" aria-live="polite">
+      <div id="hello">Welcome, <span id="helloName">Player</span> 👋</div>
+      <div id="statusBar">
+        <span class="chip" id="scoreChip">Score: 0</span>
+        <span class="chip" id="goalChip" style="display:none"></span>
+        <span class="chip" id="timeChip" style="display:none"></span>
+      </div>
+      <p style="margin:.2rem 0 0; color:var(--muted)">Drag each term into its matching bucket (like-terms together).</p>
+
+      <div id="exprBox" aria-label="Expression to sort"></div>
+      <section id="workspace" aria-label="Buckets area"></section>
+      <div id="resultBox" aria-live="assertive"></div>
+
+      <div class="actions">
+        <button id="skipBtn" class="btn-ghost">Skip</button>
+        <button id="nextBtn" class="btn-secondary" style="display:none">Next question</button>
+        <button id="resetBtn" class="btn-ghost" title="Reset this question">Reset</button>
+      </div>
+    </section>
+  </main>
+
+  <canvas id="confetti"></canvas>
+
+<script>
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const rnd = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const sup2='\u00B2'; // squared
+// expanded symbol set so questions never feel same-y
+const letters=['x','y','a','b','m','n','p','q','r','s','t','u','v','w','z'];
+const nz = ()=>{let n=0;while(n===0)n=rnd(-7,7);return n;};
+
+const info = c=> c==='const' ? {type:'const'} : {type:'var', var:c.endsWith('2')?c.slice(0,-1):c, pow:c.endsWith('2')?2:1};
+const signT  =(n,f)=> f ? (n<0?'\u2212':'') : (n<0?'\u2212':'+'); // nice minus sign
+const coeffT =(n,forVar)=> forVar && Math.abs(n)===1 ? '' : Math.abs(n);
+const labTerm=(n,c,f)=> c==='const' ? signT(n,f)+coeffT(n,false) : (()=>{const d=info(c);return signT(n,f)+coeffT(n,true)+d.var+(d.pow===2?sup2:'');})();
+const labSum =(v,c)=>{
+  if(v===0) return '0';
+  const s=v<0?'\u2212':'+'; if(c==='const') return s+Math.abs(v);
+  const d=info(c); return s+(Math.abs(v)===1?'':Math.abs(v))+d.var+(d.pow===2?sup2:'');
+};
+
+/* ---------- patterns ---------- */
+const PAT=[
+ {sq:4,lin1:0,lin2:0,con:0},{sq:0,lin1:4,lin2:0,con:0},{sq:0,lin1:0,lin2:0,con:4},
+ {sq:2,lin1:2,lin2:0,con:0},{sq:2,lin1:0,lin2:0,con:2},{sq:0,lin1:2,lin2:0,con:2},
+ {sq:3,lin1:3,lin2:0,con:0},{sq:3,lin1:0,lin2:0,con:3},{sq:0,lin1:3,lin2:0,con:3},
+ {sq:4,lin1:2,lin2:0,con:0},{sq:4,lin1:0,lin2:0,con:2},{sq:2,lin1:4,lin2:0,con:0},
+ {sq:2,lin1:0,lin2:0,con:4},{sq:0,lin1:2,lin2:0,con:4},{sq:0,lin1:4,lin2:0,con:2},
+ {sq:2,lin1:2,lin2:2,con:0},{sq:4,lin1:0,lin2:2,con:0},{sq:2,lin1:0,lin2:2,con:2},
+ {sq:0,lin1:4,lin2:2,con:0},{sq:0,lin1:2,lin2:2,con:2},{sq:5,lin1:1,lin2:0,con:0},
+ {sq:5,lin1:0,lin2:1,con:0},{sq:4,lin1:0,lin2:1,con:1},{sq:3,lin1:0,lin2:1,con:1},
+ {sq:2,lin1:3,lin2:1,con:0},{sq:4,lin1:0,lin2:0,con:3},{sq:3,lin1:0,lin2:0,con:3},
+ {sq:2,lin1:4,lin2:0,con:0},{sq:3,lin1:2,lin2:0,con:1},{sq:2,lin1:3,lin2:0,con:1},
+ {sq:0,lin1:3,lin2:2,con:0}, /* custom */
+ {sq:0,lin1:2,lin2:2,con:1}, /* custom */
+ {sq:0,lin1:3,lin2:0,con:0}  /* custom */
+];
+
+function permutePatterns(base){
+  const out=[];
+  base.forEach(p=>{
+    const l=[p.lin1,p.lin2];
+    const orders=l[1]===0?[[0,1]]:[[0,1],[1,0]];
+    orders.forEach(o=>{ out.push({sq:[p.sq,0,0],lin:[l[o[0]],l[o[1]],0]}); });
+  });
+  return out;
+}
+const P=permutePatterns(PAT);
+
+/* ---------- state ---------- */
+let totals={}, need=0, placed=0, vars=[], cats=[];
+let playerName='', mode='', targetScore=0, timeLimit=0, timeRemaining=0;
+let score=0, timerId=null, gameActive=false;
+
+/* ---------- status / end-game ---------- */
+function updateStatus(){
+  $('helloName').textContent = playerName;
+  $('playerTag').textContent = playerName ? `Playing as ${playerName}` : '';
+  const scoreTxt = `Score: ${score}`;
+  $('scoreChip').textContent = scoreTxt;
+  if(mode==='target'){
+    $('goalChip').style.display='inline-block';
+    $('goalChip').textContent = `Goal: ${targetScore}`;
+  } else { $('goalChip').style.display='none'; }
+  if(mode==='timed' && timeLimit>0){
+    $('timeChip').style.display='inline-block';
+    const m=String(Math.floor(timeRemaining/60)).padStart(2,'0');
+    const s=String(timeRemaining%60).padStart(2,'0');
+    $('timeChip').textContent = `Time: ${m}:${s}`;
+  } else { $('timeChip').style.display='none'; }
+}
+function endGame(){
+  gameActive=false;
+  if(timerId) clearInterval(timerId);
+  setTimeout(()=>{
+    alert(`${playerName}, your session is over.\nFinal score: ${score}`);
+    $('gameScreen').style.display='none';
+    $('menuScreen').style.display='grid';
+  }, 100);
+}
+
+/* ---------- bucket builder ---------- */
+function buildBuckets(){
+  $('workspace').innerHTML='';
+  totals={};
+
+  const squares=cats.filter(c=>c!=='const' && c.endsWith('2')).sort();
+  const linears=cats.filter(c=>c!=='const' && !c.endsWith('2')).sort();
+  const ordered=[...squares,...linears];
+  if(cats.includes('const')) ordered.push('const');
+
+  ordered.forEach(cat=>{
+    totals[cat]=0;
+
+    const z=document.createElement('div');
+    z.className='zone'; z.dataset.cat=cat;
+
+    const d=info(cat);
+    const h2=document.createElement('h2');
+    h2.innerHTML=d.type==='const' ? 'constants' : d.var+(d.pow===2?sup2:'')+' terms';
+    z.appendChild(h2);
+
+    const s=document.createElement('div');
+    s.className='sumOut'; s.id='sum-'+cat; s.textContent='0';
+    z.appendChild(s);
+
+    z.addEventListener('dragover',e=>{e.preventDefault(); z.classList.add('drag');});
+    z.addEventListener('dragleave',()=>{z.classList.remove('drag');});
+    z.addEventListener('drop',e=>{
+      e.preventDefault(); z.classList.remove('drag');
+      const d=JSON.parse(e.dataTransfer.getData('application/json'));
+      if(d.cat!==cat || d.used) return; // only correct bucket accepts
+
+      const tile=document.createElement('div');
+      tile.className='tile'; tile.textContent=d.text;
+      z.insertBefore(tile,s);
+
+      totals[cat]+=d.val;
+      $('sum-'+cat).textContent=labSum(totals[cat],cat);
+
+      const src=$('src-'+d.id);
+      if(src){src.dataset.used='1'; src.style.opacity='.35'; src.draggable=false;}
+
+      if(++placed===need) reveal();
+    });
+
+    $('workspace').appendChild(z);
+  });
+}
+
+/* ---------- reveal ---------- */
+function reveal(){
+  // squares, then linears, then constant
+  const squares=cats.filter(c=>c!=='const' && c.endsWith('2')).sort();
+  const linears=cats.filter(c=>c!=='const' && !c.endsWith('2')).sort();
+  const order=[...squares,...linears];
+
+  const parts=[];
+  order.forEach(c=>{ if(totals[c]) parts.push(labSum(totals[c],c)); });
+  if('const' in totals) parts.push(labSum(totals.const,'const'));
+  $('resultBox').textContent='Simplified: '+parts.join(' ');
+
+  if(!gameActive) return;
+
+  score++; updateStatus();
+  fireConfetti();
+
+  $('skipBtn').style.display='none';
+  $('nextBtn').style.display='inline-block';
+  $('nextBtn').disabled=false;
+
+  if(mode==='target' && score>=targetScore) endGame();
+}
+
+/* ---------- generate a problem (with your rules enforced) ---------- */
+function generateTerms(){
+  // Guarantee: at least two different symbols (variables) AND include constants.
+  // Also keep variety: choose 2–3 distinct variables from the pool.
+  let terms=[], localVars=[], ok=false, guard=0;
+  while(!ok && guard++<40){
+    terms=[];
+    const countVars = rnd(2,3);
+    localVars=[...letters].sort(()=>Math.random()-0.5).slice(0,countVars);
+    const pat=P[rnd(0,P.length-1)];
+
+    // Build variable terms from pattern: squares then linears for each chosen var
+    for(let i=0;i<localVars.length;i++){
+      const v = localVars[i];
+      const sqCount = pat.sq[i]||0;
+      const lnCount = pat.lin[i]||0;
+      for(let k=0;k<sqCount;k++) terms.push({val:nz(),cat:v+'2'});
+      for(let k=0;k<lnCount;k++) terms.push({val:nz(),cat:v});
+    }
+
+    // Always include at least two constants for practice combining numbers
+    terms.push({val:nz(),cat:'const'},{val:nz(),cat:'const'});
+
+    const distinctVars=new Set(terms.map(t=>t.cat).filter(c=>c!=='const')).size;
+    ok = distinctVars>=2; // Your rule: never just one symbol + numbers
+  }
+  return terms;
+}
+
+function newProblem(){
+  $('exprBox').innerHTML='';
+  $('resultBox').textContent='';
+  placed=0;
+
+  $('nextBtn').style.display='none';
+  $('skipBtn').style.display='inline-block';
+
+  const terms = generateTerms();
+  need=terms.length;
+  cats=[...new Set(terms.map(t=>t.cat))];
+  buildBuckets();
+
+  terms.sort(()=>Math.random()-0.5);
+
+  let first=true;
+  terms.forEach((t,i)=>{
+    const span=document.createElement('span');
+    span.id='src-'+i; span.className='exprTerm';
+    span.textContent=labTerm(t.val,t.cat,first); first=false;
+    span.draggable=true;
+    span.dataset.cat=t.cat; span.dataset.val=t.val; span.dataset.used='0';
+
+    span.addEventListener('dragstart',e=>{
+      span.classList.add('dragging');
+      e.dataTransfer.setData('application/json',JSON.stringify({
+        id:i, cat:t.cat, val:t.val, text:span.textContent, used:false
+      }));
+    });
+    span.addEventListener('dragend',()=>span.classList.remove('dragging'));
+
+    $('exprBox').appendChild(span);
+    if(i<terms.length-1) $('exprBox').appendChild(document.createTextNode(' '));
+  });
+}
+
+/* ---------- buttons ---------- */
+$('nextBtn').addEventListener('click',()=>{ if(gameActive) newProblem(); });
+$('skipBtn').addEventListener('click',()=>{ if(gameActive) newProblem(); });
+$('resetBtn').addEventListener('click',()=>{ if(gameActive) newProblem(); });
+
+/* ---------- start ---------- */
+$('startBtn').addEventListener('click',()=>{
+  playerName=$('userName').value.trim()||'Player';
+  mode=document.querySelector('input[name="mode"]:checked').value;
+
+  if(mode==='target'){
+    targetScore=Math.max(1,parseInt($('targetScore').value)||10);
+    timeLimit=0;
+  }else{
+    timeLimit=parseInt($('timeSelect').value);
+    timeRemaining=timeLimit;
+  }
+
+  score=0; gameActive=true;
+  $('menuScreen').style.display='none';
+  $('gameScreen').style.display='grid';
+  updateStatus();
+
+  if(mode==='timed' && timeLimit>0){
+    if(timerId) clearInterval(timerId);
+    timerId=setInterval(()=>{
+      if(--timeRemaining<=0){ endGame(); }
+      updateStatus();
+    },1000);
+  }
+
+  newProblem();
+});
+
+/* ---------- confetti (no library) ---------- */
+const confettiCanvas=$('confetti');
+const cx=confettiCanvas.getContext('2d');
+let confettiActive=false, confettiAnim=null;
+function sizeCanvas(){ confettiCanvas.width=innerWidth; confettiCanvas.height=innerHeight; }
+addEventListener('resize', sizeCanvas, {passive:true}); sizeCanvas();
+
+function fireConfetti(){
+  if(confettiActive) return; confettiActive=true; confettiCanvas.style.display='block';
+  const pieces=[]; const colors=['#34d399','#10b981','#22d3ee','#60a5fa','#8b5cf6','#f59e0b','#ef4444'];
+  const N = 140;
+  for(let i=0;i<N;i++){
+    pieces.push({
+      x: innerWidth/2 + (Math.random()*120-60),
+      y: innerHeight/3,
+      w: rnd(6,12), h: rnd(8,16),
+      vx: (Math.random()*8-4), vy: (Math.random()*-6-6),
+      rot: Math.random()*Math.PI, vr: (Math.random()-.5)*0.3,
+      col: colors[rnd(0,colors.length-1)], life: 0, ttl: rnd(60,110)
+    });
+  }
+  cancelAnimationFrame(confettiAnim);
+  const g=0.22, drag=0.995;
+  function tick(){
+    cx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    let alive=0;
+    for(const p of pieces){
+      p.life++; if(p.life>p.ttl) continue; alive++;
+      p.vx*=drag; p.vy = p.vy*drag + g; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      cx.save();
+      cx.translate(p.x,p.y); cx.rotate(p.rot);
+      cx.fillStyle=p.col; cx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      cx.restore();
+    }
+    if(alive>0){ confettiAnim=requestAnimationFrame(tick); }
+    else { confettiCanvas.style.display='none'; confettiActive=false; }
+  }
+  tick();
+}
+</script>
+</body>
+</html>
